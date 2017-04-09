@@ -13,10 +13,9 @@ traindata = [ ([2,1], 0),
               ([0.6,2.2], 1),
               ([-1,-1], 1) ];
 
-ls = [2, 2]
+ls = [2, 10, 2]
 
 out = [np.zeros(ls[i]) for i in range(0, len(ls))]
-gr_out = [np.zeros(ls[i]+1) for i in range(0, len(ls))]
 
 def newWeights():
   return [np.random.rand(ls[i], ls[i-1]+1)*2-1 for i in range(1, len(ls))]
@@ -46,18 +45,20 @@ def forward(x, W):
   return out[-1]
 
 def backprop(nn_out, cl_expected, W, rate):
-  gr_out[-1][1:] = np.ones(ls[-1])
+  gr_out = [np.zeros(ls[i]+1) for i in range(0, len(ls))]
+
+  expected = np.zeros(ls[-1])
+  expected[cl_expected] = 1
+  gr_out[-1][1:] = np.subtract(nn_out, expected)
+
   for i in range(len(ls)-1, 0, -1):
+    x = np.concatenate(([1],out[i-1]))
     for j in range(0, ls[i]):
       for k in range(0, ls[i-1]+1):
-        print("{0}, {1}, {2}".format(i, j, k))
-        x = np.concatenate(([1],out[i-1]))
         dxk = gr_out[i][j]*dReLU(np.dot(x, W[i-1][j]))*W[i-1][j][k]
-        gr_out[i-1][j] = dxk
+        gr_out[i-1][k] += dxk
         dwjk = gr_out[i][j]*dReLU(np.dot(x, W[i-1][j]))*x[k]
         W[i-1][j][k] -= dwjk*rate
-  print(gr_out)
-  exit(0)
 
 def loss_i(y, n):
   # softmax
@@ -142,7 +143,7 @@ def learn_backprop(n):
   for k in range(n):
     for item in traindata:
       y = forward(item[0], W)
-      backprop(nn_out=y, cl_expected=item[1], W=W, rate=0.01)
+      backprop(nn_out=y, cl_expected=item[1], W=W, rate=0.001)
 
     c_loss = loss(W)
     if k % 1 == 0:
