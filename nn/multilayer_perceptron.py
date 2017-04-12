@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-traindata = [ ([2,1], 0),
+traindata1 = [ ([2,1], 0),
               ([1,1], 0),
               ([0,0], 0),
               ([0.8,1.4], 0),
@@ -11,7 +11,11 @@ traindata = [ ([2,1], 0),
               ([1.5,2], 1),
               ([1.6, 1.6], 1),
               ([0.6,2.2], 1),
-              ([-1,-1], 1) ];
+              ([-1,-1], 1) ]
+
+traindata2 = [([np.random.rand()*2-1,np.random.rand()*2-1], np.random.randint(2)) for i in range(10)]
+
+traindata = traindata2
 
 ls = [2, 8, 8, 2]
 
@@ -196,8 +200,8 @@ def main():
   #W = learn_random_gradient(1000)
   W = learn_backprop(1000)
 
-  xs = np.linspace(-2, 4, num=100)
-  ys = np.linspace(-2, 4, num=100)
+  xs = np.linspace(-3, 3, num=100)
+  ys = np.linspace(-3, 3, num=100)
   xxs, yys = np.meshgrid(xs, ys)
   zs = np.zeros((xs.size, ys.size))
 
