@@ -17,7 +17,7 @@ def preprocess(file_base_name, tag):
   ofile.close()
 
 def main():
-  subp.check_call("unrar x -f DIAG.rar", shell=True)
+  subp.check_call("unrar x -o+ DIAG.rar", shell=True)
   os.system("cat ALLD2/*.POK > malignant.list")
   os.system("cat ALLD3/*.POK > benign.list")
   if os.path.exists("training_data.data"):
