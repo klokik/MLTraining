@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import time
 
 traindata1 = [ ([2,1], 0),
               ([1,1], 0),
@@ -13,12 +14,17 @@ traindata1 = [ ([2,1], 0),
               ([0.6,2.2], 1),
               ([-1,-1], 1) ]
 
-traindata2 = [([np.random.rand()*2-1,np.random.rand()*2-1], np.random.randint(2)) for i in range(10)]
+traindata21 = [([np.random.rand()*5-1.5,np.random.rand()*5-1.5], 0) for i in range(10)]
+traindata22 = [([np.random.rand()*5-1.5,np.random.rand()*5-1.5], 1) for i in range(10)]
+traindata2 = traindata21 + traindata22
 
 traindata = traindata2
 
-ls = [2, 8, 8, 2]
+ls = [2, 8, 8, 8, 2]
 
+plt.ion()
+fig = plt.figure()
+graph1 = fig.add_subplot(111)
 
 def newWeights():
   return [np.random.rand(ls[i], ls[i-1]+1)*2-1 for i in range(1, len(ls))]
@@ -59,24 +65,23 @@ def backprop(nn_out, cl_expected, W, rate):
 
   expected = np.zeros(ls[-1])
   expected[cl_expected] = 1
-  #gr_out[-1][1:] = np.subtract(nn_out, expected)
-  #gr_out[-1][1:] = np.ones(ls[-1])
+
   for i in range(0, ls[-1]):
-    gr_out[-1][i+1] = dErr(nn_out[-1], expected, i)#dLoss_i(nn_out[-1], i, cl_expected)
+    gr_out[-1][i+1] = dErr(nn_out[-1], expected, i)
+    #gr_out[-1][i+1] = dLoss_i(nn_out[-1], i, cl_expected)
 
   for i in range(len(ls)-1, 0, -1):
     x = np.concatenate(([1],nn_out[i-1]))
     for j in range(0, ls[i]):
       dL_x_ds = gr_out[i][j+1]*dReLU(np.dot(x, W[i-1][j]))
-      #print(dL_x_ds)
-      for k in range(0, ls[i-1]+1):
-        dxk = dL_x_ds*W[i-1][j][k]
-        gr_out[i-1][k] += dxk
-        dwjk = dL_x_ds*x[k]
-        W[i-1][j][k] -= dwjk*rate
-    #print(gr_out[i])
-  #print(gr_out)
-  #exit(0)
+
+      gr_out[i-1] = np.add(gr_out[i-1], dL_x_ds*W[i-1][j])
+      W[i-1][j] = np.subtract(W[i-1][j], np.multiply(x, rate*dL_x_ds))
+      # for k in range(0, ls[i-1]+1):
+      #   dxk = dL_x_ds*W[i-1][j][k]
+      #   gr_out[i-1][k] += dxk
+      #   dwjk = dL_x_ds*x[k]
+      #   W[i-1][j][k] -= dwjk*rate
 
 def loss_i(y, n):
   # softmax
@@ -152,19 +157,21 @@ def learn_random(n):
   return bestW
 
 def learn_random_gradient(n):
-  bestW = learn_random(int(n/10))
+  W = learn_random(int(n/10))
   bestLoss = 100000
   for k in range(n):
-    newW = np.add(bestW, np.multiply(newWeights(), 0.01))
+    newW = np.add(W, np.multiply(newWeights(), 0.01))
     c_loss = loss(newW)
     if k % 100 == 0:
       print("sample {0}, loss: {1}".format(k, c_loss))
+    if k % 1000 == 0:
+      plot(W, 32, False)
     if c_loss < bestLoss:
       bestLoss = c_loss
-      bestW = newW
+      W = newW
 
   print("Best loss {0}".format(bestLoss))
-  return bestW
+  return W
 
 def learn_num_gradient(n):
   W = learn_random(int(n/3))
@@ -186,22 +193,21 @@ def learn_backprop(n):
   for k in range(n):
     for item in traindata:
       nn_out = forward(item[0], W)
-      backprop(nn_out=nn_out, cl_expected=item[1], W=W, rate=0.01)
+      backprop(nn_out=nn_out, cl_expected=item[1], W=W, rate=0.0001)
 
     c_loss = loss(W)
     if k % 10 == 0:
       print("sample {0}, loss: {1}".format(k, c_loss))
       bestLoss = c_loss
+    if k % 100 == 0:
+      plot(W, 32, False)
 
   print("Best loss {0}".format(bestLoss))
   return W
 
-def main():
-  #W = learn_random_gradient(1000)
-  W = learn_backprop(1000)
-
-  xs = np.linspace(-3, 3, num=100)
-  ys = np.linspace(-3, 3, num=100)
+def plot(W, n, block):
+  xs = np.linspace(-2, 4, num=n)
+  ys = np.linspace(-2, 4, num=n)
   xxs, yys = np.meshgrid(xs, ys)
   zs = np.zeros((xs.size, ys.size))
 
@@ -213,18 +219,26 @@ def main():
       else:
         zs[j, i] = 1
 
-  plt.pcolor(xxs, yys, zs, cmap="winter")
-  plt.colorbar()
+  #plt.gcf().clear();
+  graph1.clear()
+  graph1.pcolor(xxs, yys, zs, cmap="winter")
+  #graph1.colorbar()
   for item in traindata:
     ptx = [item[0][0]]
     pty = [item[0][1]]
     if item[1] == 0:
-      plt.plot(ptx, pty, "ro")
+      graph1.plot(ptx, pty, "ro")
     else:
-      plt.plot(ptx, pty, "gs")
-  #plt.show(block=False)
+      graph1.plot(ptx, pty, "gs")
+  fig.canvas.draw()
+  #plt.show(block=True)
 
-  plt.show()
+def main():
+  #W = learn_random_gradient(10000)
+  W = learn_backprop(5000)
+
+  plot(W, 128, True)
+  time.sleep(10)
 
 if __name__ == '__main__':
   main()
