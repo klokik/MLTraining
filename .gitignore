@@ -90,3 +90,9 @@ ENV/
 
 # temp files
 *.swp
+
+# unpacked training data
+cancer/ALLD2
+cancer/ALLD3
+cancer/*.list
+cancer/*.data
