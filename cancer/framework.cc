@@ -521,8 +521,8 @@ class EllipseRanking1Classifier: public Classifier
     auto it_0 = std::find_if(rankss[0].begin(), rankss[0].end(), pred);
     auto it_1 = std::find_if(rankss[1].begin(), rankss[1].end(), pred);
 
-    assert(it_0 != rankss[0].end());
-    assert(it_1 != rankss[1].end());
+    // assert(it_0 != rankss[0].end());
+    // assert(it_1 != rankss[1].end());
 
     return std::distance(rankss[0].begin(), it_0) > std::distance(rankss[1].begin(), it_1);
   }
@@ -571,7 +571,7 @@ class RosenblatClassifier: public Classifier
 
 int main(int argc, char **argv) {
   TrainingData data = readData();
-  data.resize(100);
+  data.resize(500);
 
   TrainingData training_data, validation_data;
   std::tie(training_data, validation_data) = split(data, 0.8f);
