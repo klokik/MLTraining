@@ -190,6 +190,10 @@ class Classifier
     throw std::runtime_error("Not implemented");
   }
 
+  public: virtual bool isOnline() {
+    return true;
+  }
+
   public: virtual float error(Tag _observed, Tag _expected) {
     return std::abs(static_cast<int>(_expected) - static_cast<int>(_observed));
   }
@@ -202,13 +206,13 @@ class Classifier
   public: virtual ~Classifier() = default;
 };
 
-size_t teach(Classifier &_classifier, TrainingData _data, bool _online = true) {
+size_t teach(Classifier &_classifier, TrainingData _data) {
   size_t steps = 0;
   bool learned = true;
 
   do {
     learned = true;
-    if (_online)
+    if (_classifier.isOnline())
       for (auto item : _data)
         learned &= _classifier.learn(item.first, item.second);
     else
@@ -401,6 +405,10 @@ class EllipseRanking1Classifier: public Classifier
     throw std::runtime_error("Not implemented");
   }
 
+  public: virtual bool isOnline() override {
+    return false;
+  }
+
   public: virtual bool batchLearn(TrainingData &_data) override {
     LinearSpan span;
     vec origin;
@@ -543,7 +551,7 @@ int main(int argc, char **argv) {
   // runExperiment(ros_cl, training_data, validation_data);
 
   EllipseRanking1Classifier ellr1_cl;
-  runExperiment(ellr1_cl, training_data, validation_data, false);
+  runExperiment(ellr1_cl, training_data, validation_data);
 
   return 0;
 }
