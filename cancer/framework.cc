@@ -569,6 +569,48 @@ class RosenblatClassifier: public Classifier
   private: v_t w0;
 };
 
+class MeansClassifier: public Classifier
+{
+  public: virtual bool learn(vec _v, Tag _tag) override {
+    throw std::runtime_error("Not implemented");
+  }
+
+  public: virtual bool isOnline() override {
+    return false;
+  }
+
+  public: virtual bool batchLearn(TrainingData &_data) override {
+    means.clear();
+
+    vec sums[2]{};
+    size_t nums[] = {0, 0};
+
+    for (auto &item : _data) {
+      sums[item.second] = sums[item.second] + item.first;
+      nums[item.second]++;
+    }
+
+    assert(nums[0] != 0);
+    assert(nums[1] != 0);
+
+    this->means.push_back(sums[0]/nums[0]);
+    this->means.push_back(sums[1]/nums[1]);
+
+    return true;
+  }
+
+  public: virtual Tag classify(vec _v) override {
+    return norm(means[1] - _v) > norm(means[0] - _v);
+  }
+
+  public: virtual std::string dumpSettings() override {
+    return "Means classifier";
+  }
+
+  protected: std::vector<vec> means;
+};
+
+
 int main(int argc, char **argv) {
   TrainingData data = readData();
   data.resize(500);
@@ -612,6 +654,9 @@ int main(int argc, char **argv) {
 
   EllipseRanking1Classifier ellr1_cl;
   runExperiment(ellr1_cl, training_data, validation_data);
+
+  MeansClassifier means_cl;
+  runExperiment(means_cl, training_data, validation_data);
 
   return 0;
 }
