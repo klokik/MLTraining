@@ -55,6 +55,17 @@ vec operator - (vec _a, vec _b) {
   return c;
 }
 
+vec operator * (vec _a, vec _b) {
+  assert(_a.size() == _b.size());
+
+  vec c;
+  for (size_t i = 0; i < _a.size(); ++i)
+    c[i] = _a[i] * _b[i];
+
+  return c;
+}
+
+
 vec operator * (v_t _l, vec _a) {
   vec c;
   for (size_t i = 0; i < _a.size(); ++i)
@@ -399,6 +410,17 @@ struct Ellipse {
   vec origin;
 };
 
+v_t eqForEllipse(vec _x, Ellipse &_ell) {
+  v_t sum = 0;
+
+  for (auto axis : _ell.axes) {
+    auto p_x = project(_x-_ell.origin, {axis});
+    sum += std::pow(norm(p_x)/norm(axis), 2);
+  }
+
+  return sum;
+}
+
 class EllipseRanking1Classifier: public Classifier
 {
   public: virtual bool learn(vec _v, Tag _tag) override {
@@ -410,6 +432,39 @@ class EllipseRanking1Classifier: public Classifier
   }
 
   public: virtual bool batchLearn(TrainingData &_data) override {
+    rankss[0].clear();
+    rankss[1].clear();
+
+    std::vector<vec> datas[2];
+
+    for (auto &item : _data)
+      if (item.second == 0)
+        datas[0].push_back(item.first);
+      else
+        datas[1].push_back(item.first);
+
+    for (int i = 0; i < 2; ++i) {
+      auto &data = datas[i];
+      int rank = 0;
+      while (data.size() > 4) {
+        std::cout << "\trank " << rank++ << std::endl;
+
+        auto ell = buildEllipse(data);
+        this->rankss[i].push_back(ell);
+
+        auto it = std::max_element(data.begin(), data.end(),
+          [&ell](auto _a, auto _b) {
+            return eqForEllipse(_a, ell) < eqForEllipse(_b, ell);
+          });
+
+        data.erase(it);
+      }
+    }
+
+    return true;
+  }
+
+  protected: virtual Ellipse buildEllipse(std::vector<vec> &_data) {
     LinearSpan span;
     vec origin;
 
@@ -417,9 +472,9 @@ class EllipseRanking1Classifier: public Classifier
     vec a, b;
     for (size_t i = 0; i < _data.size()-1; ++i)
       for (size_t j = i+1; j < _data.size()-1; ++j) {
-        auto dist = norm(_data[i].first - _data[j].first);
+        auto dist = norm(_data[i] - _data[j]);
         if (dist > dist_max)
-          std::tie(dist_max, a, b) = {dist, _data[i].first, _data[j].first};
+          std::tie(dist_max, a, b) = {dist, _data[i], _data[j]};
       }
 
     span.push_back(b - a);
@@ -427,9 +482,9 @@ class EllipseRanking1Classifier: public Classifier
 
     std::vector<vec> new_data;
     for (auto item : _data)
-      new_data.push_back(item.first - a);
+      new_data.push_back(item - a);
 
-    while (span.size() != ellipse.origin.size()) {
+    while (span.size() != origin.size()) {
       auto it = std::max_element(new_data.begin(), new_data.end(),
         [&span](vec a, vec b) {
           auto h_a = orth(a, span);
@@ -457,21 +512,26 @@ class EllipseRanking1Classifier: public Classifier
       origin = origin + offset;
     }
 
-    this->ellipse.axes = span;
-    this->ellipse.origin = origin;
-
-    return true;
+    return {span, origin};
   }
 
   public: virtual Tag classify(vec _v) override {
-    return 0;
+    auto pred = [&_v] (Ellipse &el) { return eqForEllipse(_v, el) < 1;};
+
+    auto it_0 = std::find_if(rankss[0].begin(), rankss[0].end(), pred);
+    auto it_1 = std::find_if(rankss[1].begin(), rankss[1].end(), pred);
+
+    assert(it_0 != rankss[0].end());
+    assert(it_1 != rankss[1].end());
+
+    return std::distance(rankss[0].begin(), it_0) > std::distance(rankss[1].begin(), it_1);
   }
 
   public: virtual std::string dumpSettings() override {
     return "Ellipse Ranking Type1 classifier";
   }
 
-  private: Ellipse ellipse;
+  protected: std::vector<Ellipse> rankss[2];
 };
 
 class RosenblatClassifier: public Classifier
@@ -511,7 +571,7 @@ class RosenblatClassifier: public Classifier
 
 int main(int argc, char **argv) {
   TrainingData data = readData();
-  // data.resize(100);
+  data.resize(100);
 
   TrainingData training_data, validation_data;
   std::tie(training_data, validation_data) = split(data, 0.8f);
