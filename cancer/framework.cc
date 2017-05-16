@@ -98,6 +98,10 @@ vec project(vec _v, LinearSpan _span) {
   return c;
 }
 
+vec orth(vec _v, LinearSpan _span) {
+  return _v - project(_v, _span);
+}
+
 
 using Tag = int;
 using TrainingData = std::vector<std::pair<vec, Tag>>;
@@ -386,6 +390,82 @@ class SoftSVMClassifier: public Classifier
   }
 };
 
+struct Ellipse {
+  LinearSpan axes;
+  vec origin;
+};
+
+class EllipseRanking1Classifier: public Classifier
+{
+  public: virtual bool learn(vec _v, Tag _tag) override {
+    throw std::runtime_error("Not implemented");
+  }
+
+  public: virtual bool batchLearn(TrainingData &_data) override {
+    LinearSpan span;
+    vec origin;
+
+    v_t dist_max = 0;
+    vec a, b;
+    for (size_t i = 0; i < _data.size()-1; ++i)
+      for (size_t j = i+1; j < _data.size()-1; ++j) {
+        auto dist = norm(_data[i].first - data[j].second);
+        if (dist > dist_max)
+          std::tie(dist_max, a, b) = {dist, data[i].first, data[j].first};
+      }
+
+    span.push_back(b - a);
+    origin = a;
+
+    std::vector<vec> new_data;
+    for (auto item : _data)
+      new_data.push_back(item.first - a);
+
+    while (span.size() != ellipse.origin.size()) {
+      auto it = std::max_element(new_data.begin(), new_data.end(),
+        [&span](vec a, vec b) {
+          auto h_a = orth(a, span);
+          auto h_b = orth(b, span);
+          return norm(h_a) < norm(h_b);
+        });
+
+      assert(it != new_data.end());
+      auto c = *it;
+
+      auto jt = std::min_element(new_data.begin(), new_data.end(),
+        [&span, c](vec a, vec b) {
+          auto h_a = orth(a/norm(a), span);
+          auto h_b = orth(b/norm(b), span);
+          return dot(c, h_a) < dot(c, h_b);
+        });
+
+      span.push_back(c);
+      auto d = project(*jt, span);
+      *span.rbegin() = c*(norm(c - d)/norm(c));
+
+      auto offset = (c + d)/2;
+      for (auto &item : new_data)
+        item = item - offset;
+      origin = origin + offset;
+    }
+
+    this->ellipse.axes = span;
+    this->ellipse.origin = origin;
+
+    return true;
+  }
+
+  public: virtual Tag classify(vec _v) override {
+    return 0;
+  }
+
+  public: virtual std::string dumpSettings() override {
+    return "Ellipse Ranking Type1 classifier";
+  }
+
+  private: Ellipse ellipse;
+};
+
 class RosenblatClassifier: public Classifier
 {
   public: virtual bool learn(vec _v, Tag _tag) override {
@@ -450,8 +530,8 @@ int main(int argc, char **argv) {
   // DummyClassifier dummy_cl;
   // runExperiment(dummy_cl, training_data, validation_data);
 
-  NearestNClassifier nearest_cl;
-  runExperiment(nearest_cl, training_data, validation_data);
+  // NearestNClassifier nearest_cl;
+  // runExperiment(nearest_cl, training_data, validation_data);
 
   // HardSVMClassifier hsvm_cl;
   // runExperiment(hsvm_cl, training_data, validation_data);
@@ -459,8 +539,11 @@ int main(int argc, char **argv) {
   // SoftSVMClassifier ssvm_cl;
   // runExperiment(ssvm_cl, training_data, validation_data);
 
-  RosenblatClassifier ros_cl;
-  runExperiment(ros_cl, training_data, validation_data);
+  // RosenblatClassifier ros_cl;
+  // runExperiment(ros_cl, training_data, validation_data);
+
+  EllipseRanking1Classifier ellr1_cl;
+  runExperiment(ellr1_cl, training_data, validation_data);
 
   return 0;
 }
