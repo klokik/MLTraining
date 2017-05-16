@@ -409,9 +409,9 @@ class EllipseRanking1Classifier: public Classifier
     vec a, b;
     for (size_t i = 0; i < _data.size()-1; ++i)
       for (size_t j = i+1; j < _data.size()-1; ++j) {
-        auto dist = norm(_data[i].first - data[j].second);
+        auto dist = norm(_data[i].first - _data[j].first);
         if (dist > dist_max)
-          std::tie(dist_max, a, b) = {dist, data[i].first, data[j].first};
+          std::tie(dist_max, a, b) = {dist, _data[i].first, _data[j].first};
       }
 
     span.push_back(b - a);
@@ -543,7 +543,7 @@ int main(int argc, char **argv) {
   // runExperiment(ros_cl, training_data, validation_data);
 
   EllipseRanking1Classifier ellr1_cl;
-  runExperiment(ellr1_cl, training_data, validation_data);
+  runExperiment(ellr1_cl, training_data, validation_data, false);
 
   return 0;
 }
