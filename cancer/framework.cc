@@ -14,7 +14,7 @@
 #include <typeinfo>
 #include <vector>
 
-#include <opencv2/core/core.hpp>
+#include <opencv2/opencv.hpp>
 
 
 using v_t = float;
@@ -102,11 +102,15 @@ bool operator != (vec _a, vec _b) {
   return !(_a == _b);
 }
 
+inline vec project(vec _v, vec _u) {
+  return _u*(dot(_v, _u)/dot(_u, _u));
+}
+
 vec project(vec _v, LinearSpan _span) {
   vec c;
 
   for (auto u : _span)
-    c = c + u*(dot(_v, u)/dot(u, u));
+    c = c + project(_v, u);
 
   return c;
 }
@@ -115,10 +119,11 @@ vec orth(vec _v, LinearSpan _span) {
   return _v - project(_v, _span);
 }
 
-vec operator * (cv::Mat_<v_t> &_mtx, vec _a) {
-  cv::Mat_<v_t> x(_a.size(), 1, &_a[0], sizeof(v_t));
+vec operator * (cv::Mat &_mtx, vec _a) {
+  assert(typeid(v_t)::type == typeid(float)::type);
+  cv::Mat x(_a.size(), 1, cv::CV_32FC1, &_a[0], sizeof(v_t));
 
-  x = _mtx*x;
+  x = _mtx.mul(x);
 
   vec result;
   x.copyTo(result);
@@ -530,7 +535,7 @@ class EllipseRanking1Classifier: public Classifier
 
     // canvert data frame to [-1,1]^n hepercube using matrix S
     std::vector<vec> scaled_data;
-    cv::Mat_<v_t> S(origin.size(), origin.size());
+    cv::Mat S(origin.size(), origin.size(), CV_32FC1);
     for (size_t i = 0; i < S.cols; ++i)
       for (size_t j = 0; j < S.rows; ++j)
         S(j, i) = span[i][j];
