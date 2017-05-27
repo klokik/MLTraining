@@ -6,8 +6,7 @@ set(CMAKE_CXX_STANDARD 14)
 
 set(CMAKE_CXX_FLAGS "--std=c++14 -g -pedantic -Wall -Werror ${CMAKE_CXX_FLAGS}")
 
-#find_package(OpenCV REQUIRED)
+find_package(OpenCV REQUIRED)
 
 add_executable(start framework.cc)
-
-#target_link_libraries(start ${OpenCV_LIBS})
+target_link_libraries(start ${OpenCV_LIBS})

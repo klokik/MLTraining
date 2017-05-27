@@ -14,6 +14,8 @@
 #include <typeinfo>
 #include <vector>
 
+#include <opencv2/core/core.hpp>
+
 
 using v_t = float;
 using vec = std::array<v_t, 15>;
