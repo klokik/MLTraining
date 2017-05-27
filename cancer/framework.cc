@@ -113,6 +113,16 @@ vec orth(vec _v, LinearSpan _span) {
   return _v - project(_v, _span);
 }
 
+vec operator * (cv::Mat_<v_t> &_mtx, vec _a) {
+  cv::Mat_<v_t> x(_a.size(), 1, &_a[0], sizeof(v_t));
+
+  x = _mtx*x;
+
+  vec result;
+  x.copyTo(result);
+
+  return result;
+}
 
 using Tag = int;
 using TrainingData = std::vector<std::pair<vec, Tag>>;
@@ -477,14 +487,15 @@ class EllipseRanking1Classifier: public Classifier
           std::tie(dist_max, a, b) = {dist, _data[i], _data[j]};
       }
 
-    span.push_back(b - a);
-    origin = a;
+    span.push_back((b - a)/2);
+    origin = (b - a)/2;
 
     std::vector<vec> new_data;
     for (auto item : _data)
-      new_data.push_back(item - a);
+      new_data.push_back(item - origin);
 
     while (span.size() != origin.size()) {
+      // find the next furtherest point from the linear span
       auto it = std::max_element(new_data.begin(), new_data.end(),
         [&span](vec a, vec b) {
           auto h_a = orth(a, span);
@@ -493,24 +504,47 @@ class EllipseRanking1Classifier: public Classifier
         });
 
       assert(it != new_data.end());
-      auto c = *it;
+      auto h_c = orth(*it, span);
 
+      // find the most distant point from the opposite side of the lin-span
       auto jt = std::min_element(new_data.begin(), new_data.end(),
-        [&span, c](vec a, vec b) {
+        [&span, h_c](vec a, vec b) {
           auto h_a = orth(a/norm(a), span);
           auto h_b = orth(b/norm(b), span);
-          return dot(c, h_a) < dot(c, h_b);
+          return dot(h_c, h_a) < dot(h_c, h_b);
         });
 
-      span.push_back(c);
-      auto d = project(*jt, span);
-      *span.rbegin() = c*(norm(c - d)/norm(c));
+      span.push_back(h_c);
+      auto h_d = project(*jt, h_c);
+      *span.rbegin() = h_c*(norm(h_c - h_d)/norm(h_c));
 
-      auto offset = (c + d)/2;
+      // shift all the pionts so that their median
+      // on the corresponding hyperplane intersects current span
+      auto offset = (h_c + h_d)/2;
       for (auto &item : new_data)
         item = item - offset;
       origin = origin + offset;
     }
+
+    // canvert data frame to [-1,1]^n hepercube using matrix S
+    std::vector<vec> scaled_data;
+    cv::Mat_<v_t> S(origin.size(), origin.size());
+    for (size_t i = 0; i < S.cols; ++i)
+      for (size_t j = 0; j < S.rows; ++j)
+        S(j, i) = span[i][j];
+    S = S.inv();
+
+    for (auto &item : new_data)
+      scaled_data.push_back(S * item);
+
+    // find the furtherest point from center
+    auto it = std::max_element(scaled_data.begin(), scaled_data.end(),
+      [] (vec a, vec b) { return norm(a) < norm(b); });
+    v_t dist = norm(*it);
+
+    // upscale the ellipse's span
+    for (auto &item : span)
+      item = item * dist;
 
     return {span, origin};
   }
