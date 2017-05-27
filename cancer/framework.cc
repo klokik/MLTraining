@@ -11,8 +11,8 @@
 #include <string>
 #include <sstream>
 #include <tuple>
+#include <type_traits>
 #include <typeinfo>
-#include <typetraits>
 #include <vector>
 
 #include <opencv2/opencv.hpp>
@@ -121,14 +121,15 @@ vec orth(vec _v, LinearSpan _span) {
 }
 
 vec operator * (cv::Mat &_mtx, vec _a) {
-  static_assert(std::is_same<v_t, float>::value);
+  static_assert(std::is_same<v_t, float>::value, "Assumption that vector has 'float' components does not hold");
 
-  cv::Mat x(_a.size(), 1, cv::CV_32FC1, &_a[0], sizeof(v_t));
+  cv::Mat x(_a.size(), 1, CV_32FC1, &_a[0], sizeof(v_t));
 
-  x = _mtx.mul(x);
+  x = _mtx * x;
 
   vec result;
-  x.copyTo(result);
+  for (size_t i = 0; i < result.size(); ++i)
+    result[i] = x.at<float>(i, 0);
 
   return result;
 }
@@ -535,12 +536,12 @@ class EllipseRanking1Classifier: public Classifier
       origin = origin + offset;
     }
 
-    // canvert data frame to [-1,1]^n hepercube using matrix S
+    // canvert data frame to [-1,1]^n hypercube using matrix S
     std::vector<vec> scaled_data;
     cv::Mat S(origin.size(), origin.size(), CV_32FC1);
     for (int i = 0; i < S.cols; ++i)
       for (int j = 0; j < S.rows; ++j)
-        S.at(j, i) = span[i][j];
+        S.at<float>(j, i) = span[i][j];
     S = S.inv();
 
     for (auto &item : new_data)
