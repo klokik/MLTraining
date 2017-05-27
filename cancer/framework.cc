@@ -107,7 +107,7 @@ inline vec project(vec _v, vec _u) {
   return _u*(dot(_v, _u)/dot(_u, _u));
 }
 
-vec project(vec _v, LinearSpan _span) {
+vec project(vec _v, LinearSpan &_span) {
   vec c;
 
   for (auto u : _span)
@@ -116,7 +116,7 @@ vec project(vec _v, LinearSpan _span) {
   return c;
 }
 
-vec orth(vec _v, LinearSpan _span) {
+vec orth(vec _v, LinearSpan &_span) {
   return _v - project(_v, _span);
 }
 
@@ -565,8 +565,8 @@ class EllipseRanking1Classifier: public Classifier
     auto it_0 = std::find_if(rankss[0].begin(), rankss[0].end(), pred);
     auto it_1 = std::find_if(rankss[1].begin(), rankss[1].end(), pred);
 
-    // assert(it_0 != rankss[0].end());
-    // assert(it_1 != rankss[1].end());
+    assert(it_0 != rankss[0].end());
+    assert(it_1 != rankss[1].end());
 
     return std::distance(rankss[0].begin(), it_0) > std::distance(rankss[1].begin(), it_1);
   }
@@ -657,7 +657,7 @@ class MeansClassifier: public Classifier
 
 int main(int argc, char **argv) {
   TrainingData data = readData();
-  data.resize(500);
+  data.resize(10);
 
   TrainingData training_data, validation_data;
   std::tie(training_data, validation_data) = split(data, 0.8f);
