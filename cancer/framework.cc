@@ -571,13 +571,16 @@ class EllipseRanking1Classifier: public Classifier
   public: virtual Tag classify(vec _v) override {
     auto pred = [&_v] (Ellipse &el) { return eqForEllipse(_v, el) < 1;};
 
-    auto it_0 = std::find_if(rankss[0].begin(), rankss[0].end(), pred);
-    auto it_1 = std::find_if(rankss[1].begin(), rankss[1].end(), pred);
+    auto it_0 = std::find_if(rankss[0].rbegin(), rankss[0].rend(), pred);
+    auto it_1 = std::find_if(rankss[1].rbegin(), rankss[1].rend(), pred);
 
     // assert(it_0 != rankss[0].end());
     // assert(it_1 != rankss[1].end());
 
-    return std::distance(rankss[0].begin(), it_0) > std::distance(rankss[1].begin(), it_1);
+    auto inv_rank0 = std::distance(rankss[0].rbegin(), it_0)/static_cast<float>(rankss[0].size());
+    auto inv_rank1 = std::distance(rankss[1].rbegin(), it_1)/static_cast<float>(rankss[1].size());
+
+    return inv_rank1 < inv_rank0;
   }
 
   public: virtual std::string dumpSettings() override {
@@ -833,8 +836,8 @@ int main(int argc, char **argv) {
   // RosenblatClassifier ros_cl;
   // runExperiment(ros_cl, training_data, validation_data);
 
-  // EllipseRanking1Classifier ellr1_cl;
-  // runExperiment(ellr1_cl, training_data, validation_data);
+  EllipseRanking1Classifier ellr1_cl;
+  runExperiment(ellr1_cl, training_data, validation_data);
 
   MeansClassifier means_cl;
   runExperiment(means_cl, training_data, validation_data);
