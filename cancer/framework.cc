@@ -471,7 +471,17 @@ class EllipseRanking1Classifier: public Classifier
       while (data.size() >= 2) {
         std::cout << "\trank " << rank++ << std::endl;
 
-        auto ell = buildEllipse(data);
+        Ellipse ell;
+        std::vector<v_t> dists;
+        std::tie(ell, dists) = buildEllipseEx(data);
+
+        // find the furtherest point from center
+        v_t dist = *std::max_element(dists.begin(), dists.end());
+
+        // upscale the ellipse's span
+        for (auto &item : ell.axes)
+          item = item * dist;
+
         this->rankss[i].push_back(ell);
 
         auto it = std::max_element(data.begin(), data.end(),
@@ -486,7 +496,7 @@ class EllipseRanking1Classifier: public Classifier
     return true;
   }
 
-  protected: virtual Ellipse buildEllipse(std::vector<vec> &_data) {
+  protected: virtual std::pair<Ellipse, std::vector<v_t>> buildEllipseEx(std::vector<vec> &_data) {
     LinearSpan span;
     vec origin;
 
@@ -544,28 +554,30 @@ class EllipseRanking1Classifier: public Classifier
     }
 
     // convert data frame to [-1,1]^n hypercube using matrix S
-    std::vector<vec> scaled_data;
     cv::Mat S(origin.size(), span.size(), cv_t);
     for (int i = 0; i < S.cols; ++i)
       for (int j = 0; j < S.rows; ++j)
         S.at<v_t>(j, i) = span[i][j];
     auto res = cv::invert(S, S, cv::DECOMP_SVD);
-    //std::cout << S.rows << " " << S.cols << std::endl;
     assert(res != 0);
 
-    for (auto &item : new_data)
-      scaled_data.push_back(S * item);
+    std::vector<vec> scaled_data;
+    for (auto &item : new_data) {
+      // clamp vector to [-1, 1] cube
+      auto sitem = S * item;
+      for (auto &xi : sitem)
+        xi = (std::abs(xi) < 1 ? xi : 0);
+      scaled_data.push_back(sitem);
+    }
 
-    // find the furtherest point from center
-    auto it = std::max_element(scaled_data.begin(), scaled_data.end(),
-      [] (vec a, vec b) { return norm(a) < norm(b); });
-    v_t dist = norm(*it);
+    std::vector<v_t> dists;
+    for (auto &item : scaled_data) {
+      auto dist = norm(item);
+      assert(dist < 10);
+      dists.push_back(dist);
+    }
 
-    // upscale the ellipse's span
-    for (auto &item : span)
-      item = item * dist;
-
-    return {span, origin};
+    return {{span, origin}, dists};
   }
 
   public: virtual Tag classify(vec _v) override {
@@ -573,9 +585,6 @@ class EllipseRanking1Classifier: public Classifier
 
     auto it_0 = std::find_if(rankss[0].rbegin(), rankss[0].rend(), pred);
     auto it_1 = std::find_if(rankss[1].rbegin(), rankss[1].rend(), pred);
-
-    // assert(it_0 != rankss[0].end());
-    // assert(it_1 != rankss[1].end());
 
     auto inv_rank0 = std::distance(rankss[0].rbegin(), it_0)/static_cast<float>(rankss[0].size());
     auto inv_rank1 = std::distance(rankss[1].rbegin(), it_1)/static_cast<float>(rankss[1].size());
@@ -588,6 +597,50 @@ class EllipseRanking1Classifier: public Classifier
   }
 
   protected: std::vector<Ellipse> rankss[2];
+};
+
+class EllipseRanking2Classifier: public EllipseRanking1Classifier
+{
+  public: virtual bool batchLearn(TrainingData &_data) override {
+    rankss[0].clear();
+    rankss[1].clear();
+
+    std::vector<vec> datas[2];
+
+    for (auto &item : _data)
+      if (item.second == 0)
+        datas[0].push_back(item.first);
+      else
+        datas[1].push_back(item.first);
+
+    for (int i = 0; i < 2; ++i) {
+      auto &data = datas[i];
+        Ellipse ell;
+        std::vector<v_t> dists;
+
+        std::tie(ell, dists) = buildEllipseEx(data);
+
+        std::sort(dists.begin(), dists.end(), [](auto a, auto b) {return a > b;});
+
+        for (auto dist : dists) {
+          Ellipse sc_ell;
+
+          sc_ell.origin = ell.origin;
+
+          // upscale the ellipse's span
+          for (auto &item : ell.axes)
+            sc_ell.axes.push_back(item * dist);
+
+          this->rankss[i].push_back(sc_ell);
+        }
+    }
+
+    return true;
+  }
+
+  public: virtual std::string dumpSettings() override {
+    return "Ellipse Ranking Type2 classifier";
+  }
 };
 
 class RosenblatClassifier: public Classifier
@@ -838,6 +891,9 @@ int main(int argc, char **argv) {
 
   EllipseRanking1Classifier ellr1_cl;
   runExperiment(ellr1_cl, training_data, validation_data);
+
+  EllipseRanking2Classifier ellr2_cl;
+  runExperiment(ellr2_cl, training_data, validation_data);
 
   MeansClassifier means_cl;
   runExperiment(means_cl, training_data, validation_data);
