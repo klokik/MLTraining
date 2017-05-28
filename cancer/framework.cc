@@ -72,7 +72,6 @@ vec operator * (const vec &_a, const vec &_b) {
   return c;
 }
 
-
 vec operator * (const v_t _l, const vec &_a) {
   vec c;
   for (size_t i = 0; i < _a.size(); ++i)
@@ -399,7 +398,7 @@ class NearestNClassifier: public Classifier
 
 class HardSVMClassifier: public Classifier
 {
-  public: HardSVMClassifier(size_t _steps, double _max_err, double _learn_rate):
+  public: HardSVMClassifier(size_t _steps, float _max_err, float _learn_rate):
     steps(_steps), max_err(_max_err), learn_rate(_learn_rate) {
     for (auto &item : w)
       item = 0.1f;
@@ -415,6 +414,26 @@ class HardSVMClassifier: public Classifier
   }
 
   public: virtual bool batchLearn(TrainingData &_data) override {
+    size_t steps = 0ul;
+
+    while (steps < this->steps) {
+      for (auto &item : _data) {
+        auto &x = item.first;
+        auto pred = (dot(w, x) - b > 0 ? 1. : -1.);
+        auto corr = (item.second ? 1. : -1.);
+
+        auto err = pred - corr;
+        if (steps % 100000 == 0)
+          std::cout << dot(w, x) - b << " " << b << std::endl;
+
+        this->w = w - x*2*err*learn_rate;
+        this->b = b - 2*err*learn_rate;
+
+        if (steps++ >= this->steps)
+          break;
+      }
+    }
+
     return true;
   }
 
@@ -423,15 +442,22 @@ class HardSVMClassifier: public Classifier
   }
 
   public: virtual std::string dumpSettings() override {
-    return "Hard SVM classifier";
+    std::stringstream sstr;
+    sstr << "Hard SVM classifier\n\t"
+         << "w = {";
+    for (auto wi : w)
+      sstr << wi << ",\t";
+    sstr << "}\tb = " << b;
+
+    return sstr.str();
   }
 
   protected: vec w {};
   protected: v_t b = 0;
 
   protected: size_t steps;
-  protected: double max_err;
-  protected: double learn_rate;
+  protected: float max_err;
+  protected: float learn_rate;
 };
 
 class SoftSVMCVClassifier: public Classifier
@@ -959,7 +985,7 @@ int main(int argc, char **argv) {
   NearestNClassifier nearest_cl;
   runExperiment(nearest_cl, training_data, validation_data);
 
-  HardSVMClassifier hsvm_cl(10000, 1e-3, 0.001);
+  HardSVMClassifier hsvm_cl(1000000, 1e-3, 1e-5);
   runExperiment(hsvm_cl, training_data, validation_data);
 
   SoftSVMCVClassifier ssvm_cl;
