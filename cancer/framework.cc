@@ -532,6 +532,82 @@ class SoftSVMCVClassifier: public Classifier
   protected: cv::Ptr<cv::ml::SVM> svm;
 };
 
+class SoftSVMClassifier: public Classifier
+{
+  public: SoftSVMClassifier(size_t _steps, float _max_err,
+    float _learn_rate, float _regularization):
+    steps(_steps), max_err(_max_err), learn_rate(_learn_rate),
+    regularization(_regularization) {
+    for (auto &item : w)
+      item = 0.1f;
+  }
+
+  public: virtual bool isOnline() override {
+    return false;
+  }
+
+  public: virtual bool learn(vec _v, Tag _tag) override {
+    throw std::runtime_error("Not implemented");
+    return false;
+  }
+
+  public: virtual bool batchLearn(TrainingData &_data) override {
+    size_t steps = 0ul;
+
+    while (steps < this->steps) {
+      vec grad_w {};
+      v_t grad_b = 0;
+
+      for (auto &item : _data) {
+        auto &x = item.first;
+        auto pred = (dot(w, x) - b);
+        auto corr = (item.second ? 1. : -1.);
+
+        auto gtz = (1.f - pred*corr > 0 ? 1.f : 0.f);
+        auto err_i = x * (corr * gtz);
+
+        grad_w = grad_w + err_i;
+        grad_b = grad_b + corr*gtz;
+      }
+
+      grad_w = grad_w * (1.f/_data.size()) + w * regularization;
+      grad_b = grad_b / _data.size() + b * regularization;
+
+      this->w = w - grad_w*learn_rate;
+      this->b = b - grad_b*learn_rate;
+
+      if (steps % 1000 == 0)
+        std::cout << norm(grad_w) << " " << grad_b << std::endl;
+      steps++;
+    }
+
+    return true;
+  }
+
+  public: virtual Tag classify(vec _v) override {
+    return (dot(w, _v) - b > 0 ? 1 : 0);
+  }
+
+  public: virtual std::string dumpSettings() override {
+    std::stringstream sstr;
+    sstr << "Soft SVM classifier\n\t"
+         << "w = {";
+    for (auto wi : w)
+      sstr << wi << ",\t";
+    sstr << "}\tb = " << b;
+
+    return sstr.str();
+  }
+
+  protected: vec w {};
+  protected: v_t b = 0.1;
+
+  protected: size_t steps;
+  protected: float max_err;
+  protected: float learn_rate;
+  protected: float regularization;
+};
+
 struct Ellipse {
   LinearSpan axes;
   vec origin;
@@ -574,7 +650,8 @@ class EllipseRanking1Classifier: public Classifier
       auto &data = datas[i];
       int rank = 0;
       while (data.size() >= 2) {
-        std::cout << "\trank " << rank++ << std::endl;
+        if (rank++ % 10 == 0 )
+          std::cout << "\trank " << rank << std::endl;
 
         Ellipse ell;
         std::vector<v_t> dists;
@@ -979,8 +1056,8 @@ int main(int argc, char **argv) {
             << data.size() - training_data.size() - validation_data.size() << " dropped"
             << std::endl << std::endl;
 
-  // DummyClassifier dummy_cl;
-  // runExperiment(dummy_cl, training_data, validation_data);
+  DummyClassifier dummy_cl;
+  runExperiment(dummy_cl, training_data, validation_data);
 
   NearestNClassifier nearest_cl;
   runExperiment(nearest_cl, training_data, validation_data);
@@ -988,17 +1065,20 @@ int main(int argc, char **argv) {
   HardSVMClassifier hsvm_cl(1000000, 1e-3, 1e-5);
   runExperiment(hsvm_cl, training_data, validation_data);
 
-  SoftSVMCVClassifier ssvm_cl;
+  SoftSVMClassifier ssvm_cl(10000, 1e-3, 1e-5, 0.5);
   runExperiment(ssvm_cl, training_data, validation_data);
 
-  // RosenblatClassifier ros_cl;
-  // runExperiment(ros_cl, training_data, validation_data);
+  SoftSVMCVClassifier ssvmcv_cl;
+  runExperiment(ssvmcv_cl, training_data, validation_data);
 
-  // EllipseRanking1Classifier ellr1_cl;
-  // runExperiment(ellr1_cl, training_data, validation_data);
+  RosenblatClassifier ros_cl;
+  runExperiment(ros_cl, training_data, validation_data);
 
-  // EllipseRanking2Classifier ellr2_cl;
-  // runExperiment(ellr2_cl, training_data, validation_data);
+  EllipseRanking1Classifier ellr1_cl;
+  runExperiment(ellr1_cl, training_data, validation_data);
+
+  EllipseRanking2Classifier ellr2_cl;
+  runExperiment(ellr2_cl, training_data, validation_data);
 
   MeansClassifier means_cl;
   runExperiment(means_cl, training_data, validation_data);

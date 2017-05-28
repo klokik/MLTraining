@@ -4,7 +4,7 @@ project(CancerClassification)
 
 set(CMAKE_CXX_STANDARD 14)
 
-set(CMAKE_CXX_FLAGS "--std=c++14 -g -pedantic -Wall -Wuninitialized -Werror ${CMAKE_CXX_FLAGS}")
+set(CMAKE_CXX_FLAGS "--std=c++14 -O3 -pedantic -Wall -Wuninitialized -Werror ${CMAKE_CXX_FLAGS}")
 
 find_package(OpenCV REQUIRED)
 
