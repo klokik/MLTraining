@@ -399,27 +399,48 @@ class NearestNClassifier: public Classifier
 
 class HardSVMClassifier: public Classifier
 {
+  public: HardSVMClassifier(size_t _steps, double _max_err, double _learn_rate):
+    steps(_steps), max_err(_max_err), learn_rate(_learn_rate) {
+    for (auto &item : w)
+      item = 0.1f;
+  }
+
+  public: virtual bool isOnline() override {
+    return false;
+  }
+
   public: virtual bool learn(vec _v, Tag _tag) override {
-    // nop )
+    throw std::runtime_error("Not implemented");
+    return false;
+  }
+
+  public: virtual bool batchLearn(TrainingData &_data) override {
     return true;
   }
 
   public: virtual Tag classify(vec _v) override {
-    return 0;
+    return (dot(w, _v) - b > 0 ? 1 : 0);
   }
 
   public: virtual std::string dumpSettings() override {
     return "Hard SVM classifier";
   }
+
+  protected: vec w {};
+  protected: v_t b = 0;
+
+  protected: size_t steps;
+  protected: double max_err;
+  protected: double learn_rate;
 };
 
-class SoftSVMClassifier: public Classifier
+class SoftSVMCVClassifier: public Classifier
 {
-  public: SoftSVMClassifier() {
+  public: SoftSVMCVClassifier() {
     this->svm = cv::ml::SVM::create();
     this->svm->setType(cv::ml::SVM::C_SVC);
     this->svm->setKernel(cv::ml::SVM::RBF);
-    this->svm->setTermCriteria(cv::TermCriteria(cv::TermCriteria::MAX_ITER, 1000000, 1e-3));
+    this->svm->setTermCriteria(cv::TermCriteria(cv::TermCriteria::MAX_ITER, 10000, 1e-3));
     this->svm->setC(1);
     this->svm->setNu(0.5);
     this->svm->setGamma(2);
@@ -938,10 +959,10 @@ int main(int argc, char **argv) {
   NearestNClassifier nearest_cl;
   runExperiment(nearest_cl, training_data, validation_data);
 
-  // HardSVMClassifier hsvm_cl;
-  // runExperiment(hsvm_cl, training_data, validation_data);
+  HardSVMClassifier hsvm_cl(10000, 1e-3, 0.001);
+  runExperiment(hsvm_cl, training_data, validation_data);
 
-  SoftSVMClassifier ssvm_cl;
+  SoftSVMCVClassifier ssvm_cl;
   runExperiment(ssvm_cl, training_data, validation_data);
 
   // RosenblatClassifier ros_cl;
