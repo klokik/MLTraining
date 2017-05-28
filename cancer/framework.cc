@@ -16,9 +16,11 @@
 #include <vector>
 
 #include <opencv2/opencv.hpp>
+#include <opencv2/ml.hpp>
 
 
 constexpr auto cv_t = CV_32FC1;
+constexpr auto cv_tag_t = CV_32SC1;
 using v_t = float;
 constexpr size_t v_len = 15;
 using vec = std::array<v_t, v_len>;
@@ -413,18 +415,74 @@ class HardSVMClassifier: public Classifier
 
 class SoftSVMClassifier: public Classifier
 {
+  public: SoftSVMClassifier() {
+    this->svm = cv::ml::SVM::create();
+    this->svm->setType(cv::ml::SVM::C_SVC);
+    this->svm->setKernel(cv::ml::SVM::RBF);
+    this->svm->setTermCriteria(cv::TermCriteria(cv::TermCriteria::MAX_ITER, 1000000, 1e-3));
+    this->svm->setC(1);
+    this->svm->setNu(0.5);
+    this->svm->setGamma(2);
+    this->svm->setDegree(5);
+  }
+
+  public: virtual bool isOnline() override {
+    return false;
+  }
+
   public: virtual bool learn(vec _v, Tag _tag) override {
-    // nop )
+    throw std::runtime_error("Not implemented");
+    return false;
+  }
+
+  public: virtual bool batchLearn(TrainingData &_data) override {
+    cv::Mat training_data(_data.size(), v_len, cv_t);
+    cv::Mat training_tags(_data.size(), 1, cv_tag_t);
+
+    int i = 0;
+    for (auto &item : _data) {
+      memcpy(training_data.ptr(i), &item.first[0], sizeof(v_t)*v_len);
+      training_tags.at<v_t>(i) = (item.second == 0 ? -1 : 1); 
+      ++i;
+    }
+
+    cv::Ptr<cv::ml::TrainData> tagged_training_data =
+      cv::ml::TrainData::create(training_data, cv::ml::ROW_SAMPLE, training_tags);
+
+    this->svm->train(tagged_training_data);
+/*    this->svm->trainAuto(tagged_training_data,
+      10,                                               // kFold
+      cv::ml::SVM::getDefaultGrid(cv::ml::SVM::C),      // Cgrid
+      cv::ml::SVM::getDefaultGrid(cv::ml::SVM::GAMMA),  // gammaGrid
+      cv::ml::SVM::getDefaultGrid(cv::ml::SVM::P),      // pGrid
+      cv::ml::SVM::getDefaultGrid(cv::ml::SVM::NU),     // nuGrid
+      cv::ml::SVM::getDefaultGrid(cv::ml::SVM::COEF),   // coeffGrid
+      cv::ml::SVM::getDefaultGrid(cv::ml::SVM::DEGREE), // degreeGrid
+      true);                                            // balanced*/
+
     return true;
   }
 
   public: virtual Tag classify(vec _v) override {
-    return 0;
+    cv::Mat input(1, v_len, cv_t, &_v[0]);
+
+    auto response = this->svm->predict(input);
+
+    return (response > 0);
+/*    if (response == 1)
+      return 1;
+    else if (response == -1)
+      return 0;*/
+
+    std::cout << "Invalid response " << response << std::endl;
+    throw std::runtime_error("Invalid state: failed to classify data sample");
   }
 
   public: virtual std::string dumpSettings() override {
-    return "Soft SVM classifier";
+    return "Soft SVM (OCV) classifier";
   }
+
+  protected: cv::Ptr<cv::ml::SVM> svm;
 };
 
 struct Ellipse {
@@ -850,7 +908,7 @@ class FisherLinearClassifier2Plane: public Voting2PlaneClassifier
 
 int main(int argc, char **argv) {
   TrainingData data = readData();
-  data.resize(100);
+  // data.resize(100);
 
   TrainingData training_data, validation_data;
   std::tie(training_data, validation_data) = split(data, 0.8f);
@@ -877,23 +935,23 @@ int main(int argc, char **argv) {
   // DummyClassifier dummy_cl;
   // runExperiment(dummy_cl, training_data, validation_data);
 
-  // NearestNClassifier nearest_cl;
-  // runExperiment(nearest_cl, training_data, validation_data);
+  NearestNClassifier nearest_cl;
+  runExperiment(nearest_cl, training_data, validation_data);
 
   // HardSVMClassifier hsvm_cl;
   // runExperiment(hsvm_cl, training_data, validation_data);
 
-  // SoftSVMClassifier ssvm_cl;
-  // runExperiment(ssvm_cl, training_data, validation_data);
+  SoftSVMClassifier ssvm_cl;
+  runExperiment(ssvm_cl, training_data, validation_data);
 
   // RosenblatClassifier ros_cl;
   // runExperiment(ros_cl, training_data, validation_data);
 
-  EllipseRanking1Classifier ellr1_cl;
-  runExperiment(ellr1_cl, training_data, validation_data);
+  // EllipseRanking1Classifier ellr1_cl;
+  // runExperiment(ellr1_cl, training_data, validation_data);
 
-  EllipseRanking2Classifier ellr2_cl;
-  runExperiment(ellr2_cl, training_data, validation_data);
+  // EllipseRanking2Classifier ellr2_cl;
+  // runExperiment(ellr2_cl, training_data, validation_data);
 
   MeansClassifier means_cl;
   runExperiment(means_cl, training_data, validation_data);
