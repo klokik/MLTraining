@@ -25,7 +25,7 @@ using vec = std::array<v_t, 15>;
 using LinearSpan = std::vector<vec>;
 
 
-v_t dot(vec _a, vec _b) {
+v_t dot(const vec &_a, const vec &_b) {
   assert(_a.size() == _b.size());
 
   v_t sum = 0;
@@ -35,11 +35,11 @@ v_t dot(vec _a, vec _b) {
   return sum;
 }
 
-v_t norm(vec _a) {
+v_t norm(const vec &_a) {
   return std::sqrt(dot(_a, _a));
 }
 
-vec operator + (vec _a, vec _b) {
+vec operator + (const vec &_a, const vec &_b) {
   assert(_a.size() == _b.size());
 
   vec c;
@@ -49,7 +49,7 @@ vec operator + (vec _a, vec _b) {
   return c;
 }
 
-vec operator - (vec _a, vec _b) {
+vec operator - (const vec &_a, const vec &_b) {
   assert(_a.size() == _b.size());
 
   vec c;
@@ -59,7 +59,7 @@ vec operator - (vec _a, vec _b) {
   return c;
 }
 
-vec operator * (vec _a, vec _b) {
+vec operator * (const vec &_a, const vec &_b) {
   assert(_a.size() == _b.size());
 
   vec c;
@@ -70,7 +70,7 @@ vec operator * (vec _a, vec _b) {
 }
 
 
-vec operator * (v_t _l, vec _a) {
+vec operator * (const v_t _l, const vec &_a) {
   vec c;
   for (size_t i = 0; i < _a.size(); ++i)
     c[i] = _l * _a[i];
@@ -78,11 +78,11 @@ vec operator * (v_t _l, vec _a) {
   return c;
 }
 
-vec operator*(vec _a, v_t _l) {
+vec operator * (const vec &_a, const v_t _l) {
   return _l * _a;
 }
 
-vec operator / (vec _a, v_t _l) {
+vec operator / (const vec &_a, const v_t _l) {
   vec c;
   for (size_t i = 0; i < _a.size(); ++i)
     c[i] = _a[i] / _l;
@@ -90,7 +90,7 @@ vec operator / (vec _a, v_t _l) {
   return c;
 }
 
-bool operator == (vec _a, vec _b) {
+bool operator == (const vec &_a, const vec &_b) {
   assert(_a.size() == _b.size());
 
   for (size_t i = 0; i < _a.size(); ++i)
@@ -100,28 +100,28 @@ bool operator == (vec _a, vec _b) {
   return true;
 }
 
-bool operator != (vec _a, vec _b) {
+bool operator != (const vec &_a, const vec &_b) {
   return !(_a == _b);
 }
 
-inline vec project(vec _v, vec _u) {
+inline vec project(const vec &_v, const vec &_u) {
   return _u*(dot(_v, _u)/dot(_u, _u));
 }
 
-vec project(vec _v, LinearSpan &_span) {
+vec project(const vec &_v, const LinearSpan &_span) {
   vec c{};
 
-  for (auto u : _span)
+  for (const auto &u : _span)
     c = c + project(_v, u);
 
   return c;
 }
 
-vec orth(vec _v, LinearSpan &_span) {
+vec orth(const vec &_v, const LinearSpan &_span) {
   return _v - project(_v, _span);
 }
 
-vec operator * (cv::Mat &_mtx, vec _a) {
+vec operator * (cv::Mat &_mtx, vec &_a) {
   //static_assert(std::is_same<v_t, float>::value, "Assumption that vector has 'float' components does not hold");
 
   cv::Mat x(_a.size(), 1, cv_t, &_a[0], sizeof(v_t));
