@@ -467,7 +467,7 @@ class EllipseRanking1Classifier: public Classifier
     for (int i = 0; i < 2; ++i) {
       auto &data = datas[i];
       int rank = 0;
-      while (data.size() > 4) {
+      while (data.size() >= 2) {
         std::cout << "\trank " << rank++ << std::endl;
 
         auto ell = buildEllipse(data);
