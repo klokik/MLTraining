@@ -4,7 +4,7 @@
 
 
 int main(int argc, char **argv) {
-  TrainingData data = readData("training_data.data");
+  TrainingData data = readData("data/training_data.data");
   // data.resize(100);
 
   TrainingData training_data, validation_data;

@@ -19,7 +19,7 @@ def readData():
   #  data.append((vals[1:], 1))
   #mfile.close()
 
-  tfile = open("training_data.data")
+  tfile = open("data/training_data.data")
   for line in tfile:
     vals = list(map(float, line.split()))
     data.append((vals[:-1], vals[-1]))

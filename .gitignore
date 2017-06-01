@@ -92,7 +92,7 @@ ENV/
 *.swp
 
 # unpacked training data
-cancer/ALLD2
-cancer/ALLD3
-cancer/*.list
-cancer/*.data
+cancer/data/ALLD2
+cancer/data/ALLD3
+cancer/data/*.list
+#cancer/data/*.data
