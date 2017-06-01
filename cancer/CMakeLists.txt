@@ -8,13 +8,21 @@ set(CMAKE_CXX_FLAGS "-O3 -pedantic -Wall -Wuninitialized -Werror ${CMAKE_CXX_FLA
 
 find_package(OpenCV REQUIRED)
 
-set(CLASSIFIERS_SRC
-	DummyClassifier.cc
-	NearestNeighborClassifiers.cc
-	RosenblatPerceptronClassifier.cc
-	LinearFisherDiscriminantClassifier.cc
-	SVMClassifiers.cc
-	EllipseClassifiers.cc)
+include_directories("inc")
 
-add_executable(start start.cc framework.cc framework.hh cv_common.hh ${CLASSIFIERS_SRC})
+set(CLASSIFIERS_SRC
+	src/DummyClassifier.cc
+	src/NearestNeighborClassifiers.cc
+	src/RosenblatPerceptronClassifier.cc
+	src/LinearFisherDiscriminantClassifier.cc
+	src/SVMClassifiers.cc
+	src/EllipseClassifiers.cc)
+
+add_executable(start
+	start.cc
+	src/framework.cc
+	inc/framework.hh
+	inc/cv_common.hh
+	${CLASSIFIERS_SRC})
+
 target_link_libraries(start ${OpenCV_LIBS})
