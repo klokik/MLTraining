@@ -254,7 +254,7 @@ size_t teach(Classifier &_classifier, TrainingData _data) {
 
     steps++;
 
-    if (steps % 100 == 0)
+    if (steps % 1000 == 0)
       std::cout << "\tlearning step " << steps << std::endl;
 
     // if (steps % 1000 == 0)
@@ -650,7 +650,7 @@ class EllipseRanking1Classifier: public Classifier
       auto &data = datas[i];
       int rank = 0;
       while (data.size() >= 2) {
-        if (rank++ % 10 == 0 )
+        if (rank++ % 50 == 0 )
           std::cout << "\trank " << rank << std::endl;
 
         Ellipse ell;
@@ -1056,8 +1056,15 @@ int main(int argc, char **argv) {
             << data.size() - training_data.size() - validation_data.size() << " dropped"
             << std::endl << std::endl;
 
-  DummyClassifier dummy_cl;
-  runExperiment(dummy_cl, training_data, validation_data);
+  int chunks = 10;
+  for (int i = 0; i < chunks; ++i) {
+    TrainingData training_data, validation_data;
+    std::tie(training_data, validation_data) = split(data, 1.f/chunks, static_cast<float>(i)/chunks);
+    DummyClassifier dummy_cl;
+    runExperiment(dummy_cl, training_data, validation_data);
+  }
+
+  return 0;
 
   NearestNClassifier nearest_cl;
   runExperiment(nearest_cl, training_data, validation_data);
