@@ -71,3 +71,6 @@ class MeansClassifier: public Classifier
 
   protected: std::vector<vec> means;
 };
+
+REGISTER_CLASSIFIER(NearestNClassifier);
+REGISTER_CLASSIFIER(MeansClassifier);

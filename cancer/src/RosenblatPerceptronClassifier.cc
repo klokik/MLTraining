@@ -40,3 +40,5 @@ class RosenblatClassifier: public Classifier
   private: vec w{};
   private: v_t w0;
 };
+
+REGISTER_CLASSIFIER(RosenblatClassifier);

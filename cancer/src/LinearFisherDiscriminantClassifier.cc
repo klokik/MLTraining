@@ -90,3 +90,5 @@ class FisherLinearClassifier2Plane: public Voting2PlaneClassifier
 
   private: std::map<size_t, std::pair<cv::Vec2f, float>> ws; // w and margin level
 };
+
+REGISTER_CLASSIFIER(FisherLinearClassifier2Plane);

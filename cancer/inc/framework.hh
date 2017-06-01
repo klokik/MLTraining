@@ -1,11 +1,13 @@
 #pragma once
 
-
 #include <cassert>
 #include <cmath>
 
 #include <array>
 #include <exception>
+#include <functional>
+#include <map>
+#include <memory>
 #include <sstream>
 #include <string>
 #include <tuple>
@@ -59,6 +61,39 @@ class Classifier
   public: Classifier() = default;
   public: virtual ~Classifier() = default;
 };
+
+using ClassifierPtr = std::shared_ptr<Classifier>;
+using ClCtor = std::function<ClassifierPtr()>;
+
+class GlobalClassifierFactory
+{
+  public: GlobalClassifierFactory() = default;
+
+  public: int registerClassifier(const char *_name,
+    ClCtor _ctor) {
+    registered_classifiers[_name] = _ctor;
+
+    return registered_classifiers.size();
+  }
+
+  public: ClassifierPtr makeClassifier(const char *_name) {
+    return registered_classifiers.at(_name)();
+  }
+
+  private: static std::map<std::string, ClCtor> registered_classifiers;
+};
+
+extern GlobalClassifierFactory data_classification_factory;
+
+#define TOKENPASTE1(x, y) x ## y
+#define TOKENPASTE2(x, y) TOKENPASTE1(x, y)
+#define REGISTER_CLASSIFIER(CL) static int \
+  TOKENPASTE2(reg_decl_unused, __LINE__) = \
+    ::data_classification_factory.registerClassifier(\
+    #CL, [](){return std::static_pointer_cast<Classifier>\
+      (std::make_shared<CL>());})
+
+#define MK_CLASSIFIER(CL) (::data_classification_factory.makeClassifier(#CL))
 
 class Voting2PlaneClassifier: public Classifier
 {

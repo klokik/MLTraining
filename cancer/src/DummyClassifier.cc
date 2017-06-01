@@ -16,3 +16,5 @@ class DummyClassifier: public Classifier
     return "Dummy classifier";
   }
 };
+
+REGISTER_CLASSIFIER(DummyClassifier);

@@ -213,3 +213,7 @@ class SoftSVMClassifier: public Classifier
   protected: float learn_rate;
   protected: float regularization;
 };
+
+REGISTER_CLASSIFIER(SoftSVMCVClassifier);
+//REGISTER_CLASSIFIER(SoftSVMClassifier);
+//REGISTER_CLASSIFIER(HardSVMClassifier);

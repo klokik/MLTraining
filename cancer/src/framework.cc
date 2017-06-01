@@ -15,6 +15,9 @@
 #include "framework.hh"
 
 
+std::map<std::string, ClCtor> GlobalClassifierFactory::registered_classifiers{};
+GlobalClassifierFactory data_classification_factory{};
+
 v_t dot(const vec &_a, const vec &_b) {
   assert(_a.size() == _b.size());
 

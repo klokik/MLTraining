@@ -231,3 +231,6 @@ class EllipseRanking2Classifier: public EllipseRanking1Classifier
     return "Ellipse Ranking Type2 classifier";
   }
 };
+
+REGISTER_CLASSIFIER(EllipseRanking1Classifier);
+REGISTER_CLASSIFIER(EllipseRanking2Classifier);

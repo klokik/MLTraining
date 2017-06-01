@@ -31,10 +31,11 @@ int main(int argc, char **argv) {
   //   runExperiment(dummy_cl, training_data, validation_data);
   // }
 
-  return 0;
+  auto dummy_cl = MK_CLASSIFIER(DummyClassifier);
+  runExperiment(*dummy_cl, training_data, validation_data);
 
-  // NearestNClassifier nearest_cl;
-  // runExperiment(nearest_cl, training_data, validation_data);
+  auto nearest_cl = MK_CLASSIFIER(NearestNClassifier);
+  runExperiment(*nearest_cl, training_data, validation_data);
 
   // HardSVMClassifier hsvm_cl(1000000, 1e-3, 1e-5);
   // runExperiment(hsvm_cl, training_data, validation_data);
@@ -42,23 +43,23 @@ int main(int argc, char **argv) {
   // SoftSVMClassifier ssvm_cl(10000, 1e-3, 1e-5, 0.5);
   // runExperiment(ssvm_cl, training_data, validation_data);
 
-  // SoftSVMCVClassifier ssvmcv_cl;
-  // runExperiment(ssvmcv_cl, training_data, validation_data);
+  auto ssvmcv_cl = MK_CLASSIFIER(SoftSVMCVClassifier);
+  runExperiment(*ssvmcv_cl, training_data, validation_data);
 
-  // RosenblatClassifier ros_cl;
-  // runExperiment(ros_cl, training_data, validation_data);
+  auto ros_cl = MK_CLASSIFIER(RosenblatClassifier);
+  runExperiment(*ros_cl, training_data, validation_data);
 
-  // EllipseRanking1Classifier ellr1_cl;
-  // runExperiment(ellr1_cl, training_data, validation_data);
+  auto ellr1_cl = MK_CLASSIFIER(EllipseRanking1Classifier);
+  runExperiment(*ellr1_cl, training_data, validation_data);
 
-  // EllipseRanking2Classifier ellr2_cl;
-  // runExperiment(ellr2_cl, training_data, validation_data);
+  auto ellr2_cl = MK_CLASSIFIER(EllipseRanking2Classifier);
+  runExperiment(*ellr2_cl, training_data, validation_data);
 
-  // MeansClassifier means_cl;
-  // runExperiment(means_cl, training_data, validation_data);
+  auto means_cl = MK_CLASSIFIER(MeansClassifier);
+  runExperiment(*means_cl, training_data, validation_data);
 
-  // FisherLinearClassifier2Plane flc2p_cl;
-  // runExperiment(flc2p_cl, training_data, validation_data);
+  auto flc2p_cl = MK_CLASSIFIER(FisherLinearClassifier2Plane);
+  runExperiment(*flc2p_cl, training_data, validation_data);
 
   return 0;
 }
