@@ -23,13 +23,16 @@ int main(int argc, char **argv) {
             << data.size() - training_data.size() - validation_data.size() << " dropped"
             << std::endl << std::endl;
 
-  // int chunks = 10;
-  // for (int i = 0; i < chunks; ++i) {
-  //   TrainingData training_data, validation_data;
-  //   std::tie(training_data, validation_data) = split(data, 1.f/chunks, static_cast<float>(i)/chunks);
-  //   DummyClassifier dummy_cl;
-  //   runExperiment(dummy_cl, training_data, validation_data);
-  // }
+#if defined(CROSS_VALIDATION_EX)
+  Cross validation across whole set in chunks
+  int chunks = 10;
+  for (int i = 0; i < chunks; ++i) {
+    TrainingData training_data, validation_data;
+    std::tie(training_data, validation_data) = split(data, 1.f/chunks, static_cast<float>(i)/chunks);
+    auto dummy_cl = MK_CLASSIFIER(DummyClassifier);
+    runExperiment(*dummy_cl, training_data, validation_data);
+  }
+#endif
 
   auto dummy_cl = MK_CLASSIFIER(DummyClassifier);
   runExperiment(*dummy_cl, training_data, validation_data);
@@ -37,11 +40,11 @@ int main(int argc, char **argv) {
   auto nearest_cl = MK_CLASSIFIER(NearestNClassifier);
   runExperiment(*nearest_cl, training_data, validation_data);
 
-  // HardSVMClassifier hsvm_cl(1000000, 1e-3, 1e-5);
-  // runExperiment(hsvm_cl, training_data, validation_data);
+  auto hsvm_cl = MK_CLASSIFIER(HardSVMClassifier);
+  runExperiment(*hsvm_cl, training_data, validation_data);
 
-  // SoftSVMClassifier ssvm_cl(10000, 1e-3, 1e-5, 0.5);
-  // runExperiment(ssvm_cl, training_data, validation_data);
+  auto ssvm_cl = MK_CLASSIFIER(SoftSVMClassifier);
+  runExperiment(*ssvm_cl, training_data, validation_data);
 
   auto ssvmcv_cl = MK_CLASSIFIER(SoftSVMCVClassifier);
   runExperiment(*ssvmcv_cl, training_data, validation_data);

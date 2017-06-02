@@ -10,6 +10,10 @@ class HardSVMClassifier: public Classifier
       item = 0.1f;
   }
 
+  public: HardSVMClassifier() {
+    HardSVMClassifier(1000000, 1e-3, 1e-5);
+  }
+
   public: virtual bool isOnline() override {
     return false;
   }
@@ -29,8 +33,9 @@ class HardSVMClassifier: public Classifier
         auto corr = (item.second ? 1. : -1.);
 
         auto err = pred - corr;
-        if (steps % 100000 == 0)
+        if (steps % 100000 == 0) {
           std::cout << dot(w, x) - b << " " << b << std::endl;
+        }
 
         this->w = w - x*2*err*learn_rate;
         this->b = b - 2*err*learn_rate;
@@ -61,9 +66,9 @@ class HardSVMClassifier: public Classifier
   protected: vec w {};
   protected: v_t b = 0;
 
-  protected: size_t steps;
-  protected: float max_err;
-  protected: float learn_rate;
+  protected: size_t steps = 1000000;
+  protected: float max_err = 1e-3;
+  protected: float learn_rate = 1e-5;
 };
 
 class SoftSVMCVClassifier: public Classifier
@@ -148,6 +153,10 @@ class SoftSVMClassifier: public Classifier
       item = 0.1f;
   }
 
+  public: SoftSVMClassifier() {
+    SoftSVMClassifier(10000, 1e-3, 1e-5, 0.5);
+  }
+
   public: virtual bool isOnline() override {
     return false;
   }
@@ -208,12 +217,12 @@ class SoftSVMClassifier: public Classifier
   protected: vec w {};
   protected: v_t b = 0.1;
 
-  protected: size_t steps;
-  protected: float max_err;
-  protected: float learn_rate;
-  protected: float regularization;
+  protected: size_t steps = 10000;
+  protected: float max_err = 1e-3;
+  protected: float learn_rate = 1e-5;
+  protected: float regularization = 0.5;
 };
 
 REGISTER_CLASSIFIER(SoftSVMCVClassifier);
-//REGISTER_CLASSIFIER(SoftSVMClassifier);
-//REGISTER_CLASSIFIER(HardSVMClassifier);
+REGISTER_CLASSIFIER(SoftSVMClassifier);
+REGISTER_CLASSIFIER(HardSVMClassifier);
